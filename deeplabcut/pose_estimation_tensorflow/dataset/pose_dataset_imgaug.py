@@ -21,6 +21,7 @@ import random as rand
 import numpy as np
 from numpy import array as arr
 from numpy import concatenate as cat
+from imgaug.augmentables.normalization import normalize_images
 
 import scipy.io as sio
 from deeplabcut.utils.auxfun_videos import imread
@@ -79,6 +80,8 @@ class PoseDataset:
                 data.append(item)
 
             self.has_gt = has_gt
+            data_norm=normalize_images(data)####edit
+            data=data_norm.tolist()
             return data
         else:
             print("Loading pickle data with float coordinates!")
@@ -104,6 +107,8 @@ class PoseDataset:
                     has_gt = False
                 data.append(item)
             self.has_gt = has_gt
+            data_norm=normalize_images(data)####edit
+            data=data_norm.tolist()
             return data
 
     def build_augmentation_pipeline(self,
