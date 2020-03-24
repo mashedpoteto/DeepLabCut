@@ -222,6 +222,14 @@ def FitSARIMAXModel(x,p,pcutoff,alpha,ARdegree,MAdegree,nforecast = 0,disp=False
         except ValueError: #https://groups.google.com/forum/#!topic/pystatsmodels/S_Fo53F25Rk (let's update to statsmodels 0.10.0 soon...)
             startvalues=np.array([convertparms2start(pn) for pn in mod.param_names])
             res= mod.fit(start_params=startvalues,disp=disp)
+        except np.linalg.LinAlgError:
+            # The process is not stationary, but the default SARIMAX model tries to solve for such a distribution...
+            # Relaxing those constraints should do the job.
+            mod = sm.tsa.statespace.SARIMAX(Y.flatten(), order=(ARdegree, 0, MAdegree),
+                                            seasonal_order=(0, 0, 0, 0), simple_differencing=True,
+                                            enforce_stationarity=False, enforce_invertibility=False,
+                                            use_exact_diffuse=False)
+            res = mod.fit(disp=disp)
 
         predict = res.get_prediction(end=mod.nobs + nforecast-1)
         return predict.predicted_mean,predict.conf_int(alpha=alpha)
@@ -365,7 +373,7 @@ def ExtractFramesbasedonPreselection(Index,extractionalgorithm,Dataframe,datanam
     # Extract annotations based on DeepLabCut and store in the folder (with name derived from video name) under labeled-data
     if len(frames2pick)>0:
         #Dataframe = pd.read_hdf(os.path.join(videofolder,dataname+'.h5'))
-        DF = Dataframe.ix[frames2pick]
+        DF = Dataframe.iloc[frames2pick]
         DF.index=[os.path.join('labeled-data', vname,"img"+str(index).zfill(strwidth)+".png") for index in DF.index] #exchange index number by file names.
 
         machinefile=os.path.join(tmpfolder,'machinelabels-iter'+str(cfg['iteration'])+'.h5')
@@ -441,16 +449,16 @@ def PlottingSingleFramecv2(cap,cv2,crop,coords,Dataframe,bodyparts2plot,tmpfolde
         imagename1 = os.path.join(tmpfolder,"img"+str(index).zfill(strwidth)+".png")
         imagename2 = os.path.join(tmpfolder,"img"+str(index).zfill(strwidth)+"labeled.png")
 
-        if os.path.isfile(os.path.join(tmpfolder,"img"+str(index).zfill(strwidth)+".png")):
-            pass
-        else:
+        if not os.path.isfile(imagename1):
             plt.axis('off')
-            cap.set(1,index)
+            cap.set(1, index)
             ret, frame = cap.read()
-            if ret:
-                image=img_as_ubyte(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-                if crop:
-                    image=image[int(coords[2]):int(coords[3]),int(coords[0]):int(coords[1]),:]
+            if not ret:
+                print('Frame could not be read.')
+                return
+            image = img_as_ubyte(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+            if crop:
+                image = image[int(coords[2]):int(coords[3]), int(coords[0]):int(coords[1]), :]
 
             io.imsave(imagename1,image)
 

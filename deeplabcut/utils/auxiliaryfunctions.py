@@ -120,8 +120,11 @@ def read_config(configname):
                 with open(path, 'r') as ymlfile:
                   cfg = yaml.load(ymlfile,Loader=yaml.SafeLoader)
                   write_config(configname,cfg)
+            else:
+                raise
+        
     else:
-        raise FileNotFoundError ("Config file is not found. Please make sure that the file exists and/or there are no unnecessary spaces in the path of the config file!")
+        raise FileNotFoundError ("Config file is not found. Please make sure that the file exists and/or that you passed the path of the config file correctly!")
     return(cfg)
 
 def write_config(configname,cfg):
@@ -418,7 +421,7 @@ def LoadAnalyzedData(videofolder,vname,DLCscorer,filtered):
             Dataframe = pd.read_hdf(fn)
             metadata=LoadVideoMetadata(os.path.join(videofolder,vname + DLCscorer + '.h5'))
             datafound=True
-            suffix='_filtered.'
+            suffix='_filtered'
             return datafound,metadata,Dataframe, DLCscorer,suffix
         except FileNotFoundError:
             print("No filtered predictions found, using frame-by-frame output instead.")
