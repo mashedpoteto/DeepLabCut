@@ -46,6 +46,8 @@ class PoseDataset:
         self.scale = cfg.global_scale
         self.scale_jitter_lo=cfg.get('scale_jitter_lo',.75)
         self.scale_jitter_up=cfg.get('scale_jitter_up',1.25)
+        self.Flipud=cfg.get('Flipud',1.0)#### vertical_flipping
+        self.Dropout=cfg.get('Dropout',0.02)
         print("Batch Size is %d" % self.batch_size)
 
     def load_dataset(self):
@@ -150,6 +152,13 @@ class PoseDataset:
                 pipeline.add(sometimes(iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.05*255), per_channel=0.5)))
         if cfg.get('grayscale', False):
             pipeline.add(sometimes(iaa.Grayscale(alpha=(0.5, 1.0))))
+        if cfg.get('Flipud',False):    ##### Vertical Flip
+            opt = cfg.get('Flipud',False)
+            if type(opt) == int:
+                pipeline.add(sometimes(iaa.Fliplr(opt)))
+            else:
+                pipeline.add(sometimes(iaa.Fliplr(1.0)))
+           
 
         if cfg.get('hist_eq', False):
             pipeline.add(sometimes(iaa.AllChannelsHistogramEqualization()))
